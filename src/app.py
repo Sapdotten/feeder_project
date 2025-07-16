@@ -1,10 +1,24 @@
-from fastapi import FastAPI, Request
+import asyncio
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from src.motor import MotorController
+from src.utils import get_yaml
+
 from src import models
 from src.configs import Config
-from src.service import Service
-import asyncio
 
-app = FastAPI()
+motor: MotorController = MotorController(**get_yaml("./config.yaml")['motor'])
+lock: asyncio.Lock = asyncio.Lock()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    motor.setup()
+    yield
+    motor.close()
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.get("/whoami", response_model=models.MyResponseModel, status_code=200)
@@ -14,6 +28,7 @@ async def whoami() -> models.MyResponseModel:
 
 @app.post("/feed", response_model=models.FeedResponseModel, status_code=200)
 async def feed(request: models.FeedRequestModel) -> models.FeedResponseModel:
-    async with Service.lock:
-        await asyncio.to_thread(Service.feed, request.food_amount)
+    global lock
+    async with lock:
+        await asyncio.to_thread(motor.rotate, request.food_amount)
     return models.FeedResponseModel(status="Success")
