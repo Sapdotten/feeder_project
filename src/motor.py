@@ -1,75 +1,64 @@
 import time
+from typing import Any
+
 from OPi import GPIO
-import pi3b
-import yaml
+from pydantic import BaseModel
 
-# Конфигурация вращения
-direction: bool  # направление вращения вала
-step_division: float  # Деление шага, заданное на драйвере
-rotation_count: int  # Количество оборотов при вращении вала
-step_delay: float  # Задержка между шагами вращения (скорость вращения) в секундах
-steps: int  # Количество шагов для одного цикла вращения
-
-# Конфигурация подключения
-direction_pin: int  # Пин направления вращения
-step_pin: int  # Пин активации шага
-enable_pin: int  # Пин включения питания двигателя
+from src import pi3b
+from src.models import FoodAmount
 
 
-def setup():
-    with open('../config.yaml', 'r') as file:
-        config = yaml.safe_load(file)
+class MotorController(BaseModel):
+    direction_pin: int
+    step_pin: int
+    enable_pin: int
+    direction: bool
+    rotation_count_small: int
+    rotation_count_big: int
+    step_division: float
+    step_delay: float
+    is_enabled: bool = False
+    portion_steps: dict = {}
 
-    # Конфигурация вращения
-    global step_division
-    step_division = config['motor']['step_division']
-    global rotation_count
-    rotation_count = config['motor']['rotation_count']
-    global step_delay
-    step_delay = config['motor']['step_delay']
-    global direction
-    direction = config['motor']['direction']
-    global steps
-    steps = int(200 / step_division * rotation_count)
+    def model_post_init(self, __context: Any) -> None:
+        self.portion_steps = {
+            FoodAmount.SMALL: int(200 / self.step_division * self.rotation_count_small),
+            FoodAmount.BIG: int(200 / self.step_division * self.rotation_count_big),
+        }
+        self.is_enabled = False
 
-    # Конфигурация подключения
-    global direction_pin
-    direction_pin = config['motor']['direction_pin']
-    global step_pin
-    step_pin = config['motor']['step_pin']
-    global enable_pin
-    enable_pin = config['motor']['enable_pin']
+    def setup(self) -> None:
+        GPIO.setmode(pi3b.BOARD)
+        # Установка нумерации пинов по схеме
+        GPIO.setup(self.step_pin, GPIO.OUT)
+        GPIO.setup(self.direction_pin, GPIO.OUT)
+        GPIO.setup(self.enable_pin, GPIO.OUT)
+        GPIO.output(self.direction_pin, GPIO.HIGH if self.direction else GPIO.LOW)
+        self.is_enabled = True
 
-    GPIO.setmode(pi3b.BOARD)
-    # Установка нумерации пинов по схеме
-    GPIO.setup(step_pin, GPIO.OUT)
-    GPIO.setup(direction_pin, GPIO.OUT)
-    GPIO.setup(enable_pin, GPIO.OUT)
+    def close(self) -> None:
+        # Отключение двигателя при завершении программы
+        GPIO.output(self.enable_pin, GPIO.HIGH)  # HIGH
+        GPIO.cleanup()
 
-    GPIO.output(direction_pin, GPIO.HIGH if direction else GPIO.LOW)  # Устанавливаем направление вращения
-
-
-def close():
-    # Отключение двигателя при завершении программы
-    GPIO.output(enable_pin, GPIO.HIGH)  # HIGH
-    GPIO.cleanup()
-
-
-def rotate():
-    GPIO.output(enable_pin, GPIO.LOW)  # Включаем двигатель
-    for x in range(steps):
-        GPIO.output(step_pin, GPIO.HIGH)  # Активируем шаг
-        time.sleep(step_delay)  # Задержка в миллисекундах
-        GPIO.output(step_pin, GPIO.LOW)  # Деактивируем шаг
-        time.sleep(step_delay)  # Задержка в миллисекундах
-    GPIO.output(enable_pin, GPIO.HIGH)  # Отключаем двигатель
-    time.sleep(1)  # Ждем секунду
+    def rotate(self, portion: FoodAmount) -> None:
+        GPIO.output(self.enable_pin, GPIO.LOW)  # Включаем двигатель
+        for _ in range(self.portion_steps[portion]):
+            GPIO.output(self.step_pin, GPIO.HIGH)  # Активируем шаг
+            time.sleep(self.step_delay)  # Задержка в миллисекундах
+            GPIO.output(self.step_pin, GPIO.LOW)  # Деактивируем шаг
+            time.sleep(self.step_delay)  # Задержка в миллисекундах
+        GPIO.output(self.enable_pin, GPIO.HIGH)  # Отключаем двигатель
+        time.sleep(1)  # Ждем секунду
 
 
 if __name__ == "__main__":
-    setup()
+    from utils import get_yaml
+
+    motor = MotorController(**get_yaml("../config.yaml"))
+    motor.setup()
     try:
         while True:
-            rotate()
+            motor.rotate(FoodAmount.SMALL)
     except KeyboardInterrupt:
-        close()
+        motor.close()
