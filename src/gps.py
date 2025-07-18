@@ -1,40 +1,54 @@
 import time
 import serial
-import yaml
-
-serialPort: serial.Serial
-
-
-def setup():
-    # чтение конфигурации
-    with open('config.yaml', 'r') as file:
-        config = yaml.safe_load(file)
-    uart_port = config['gps']['uart_port']
-    baud_rate = config['gps']['baud_rate']
-    # открытие порта для GPS-модуля
-    global serialPort
-    serialPort = serial.Serial(uart_port, baud_rate, timeout=1)
+from pydantic import BaseModel
+from utils import get_yaml
 
 
-def close():
-    serialPort.close()
+class GpsController(BaseModel):
+    uart_port: str
+    baud_rate: int
+    timeout: int = 1
 
+    def setup(self):
+        self.serialPort = serial.Serial(
+            self.uart_port,
+            self.baud_rate,
+            timeout=self.timeout
+        )
 
-def read_data() -> str:
-    data = ''
-    while not data.startswith('$GPGGA'):  # Проверяем, есть ли нужные данные
-        if serialPort.in_waiting > 0:  # Проверяем, есть ли данные для чтения
-            data = serialPort.readline().decode('utf-8', errors='ignore').rstrip()  # Читаем строку и декодируем
-        time.sleep(0.1)
-    return data
+    def close(self) -> None:
+        self.serialPort.close()
+
+    def read_data(self) -> str:
+        data = ""
+        # Проверяем, есть ли нужные данные
+        while not data.startswith("$GPGGA"):
+            time.sleep(0.1)
+            if self.serialPort.in_waiting > 0:  # Проверяем, есть ли данные для чтения
+                data = (  # Проверяем, есть ли нужные данные
+                    self.serialPort.readline().decode("utf-8", errors="ignore").rstrip()
+                )
+
+        return data
+
+    @staticmethod
+    def parse_coords(source: str) -> tuple[str, str] | None:
+        if not source:
+            return None
+        coords = source.split(',')
+        for i in range(2, 5):
+            if coords[i+1] in 'SW':
+                coords[i] = '-' + coords[i]
+        return coords[2], coords[4]
 
 
 if __name__ == "__main__":
-    setup()
+    gps = GpsController(**get_yaml("../config.yaml")['gps'])
+    gps.setup()
     try:
         while True:
-            data = read_data()
+            data = gps.read_data()
             print(data)
             time.sleep(1)
     except KeyboardInterrupt:
-        close()
+        gps.close()

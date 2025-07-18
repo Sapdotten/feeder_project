@@ -5,5 +5,3 @@ class Config(BaseSettings):
     my_id: int
 
     model_config = SettingsConfigDict(env_file="./.env")
-
-

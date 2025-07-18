@@ -55,7 +55,7 @@ class MotorController(BaseModel):
 if __name__ == "__main__":
     from utils import get_yaml
 
-    motor = MotorController(**get_yaml("../config.yaml"))
+    motor = MotorController(**get_yaml("../config.yaml")['motor'])
     motor.setup()
     try:
         while True:
