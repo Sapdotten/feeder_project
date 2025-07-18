@@ -10,3 +10,4 @@ motor:
 gps:
   uart_port: /dev/ttyS3
   baud_rate: 9600
+  timeout: 1 # максимальное время ожидания данных с модуля

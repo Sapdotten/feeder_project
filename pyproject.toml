@@ -12,8 +12,15 @@ dependencies = [
     "pydantic (>=2.11.7,<3.0.0)",
     "pydantic-settings (>=2.10.1,<3.0.0)",
     "uvicorn (>=0.35.0,<0.36.0)",
-    "asyncio (>=3.4.3,<4.0.0)"
+    "asyncio (>=3.4.3,<4.0.0)",
+    "pytest (>=8.4.1,<9.0.0)",
+    "pyserial (>=3.5,<4.0)",
+    "pyyaml (>=6.0.2,<7.0.0)",
+    "opi-gpio (>=0.5.2,<0.6.0)"
 ]
+[tool.pytest.ini_options]
+addopts = "-ra -q --import-mode=importlib"
+testpaths = ["src/tests"]
 
 [tool.poetry]
 
@@ -28,3 +35,4 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poe.tasks.ruff-fix]
 shell = "ruff check --no-cache --output-format grouped --fix --show-fixes --config .ruff.toml ."
+

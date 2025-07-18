@@ -22,3 +22,8 @@ class FeedRequestModel(BaseModel):
 
 class FeedResponseModel(BaseModel):
     status: str
+
+
+class MyGps(BaseModel):
+    latitude: str
+    longitude: str
