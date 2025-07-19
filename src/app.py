@@ -1,13 +1,14 @@
 import asyncio
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, Response, status
-from src.services.motor import MotorController
-from src.services.gps import GpsController
-from src.services.camera import CameraController
-from src.utils import get_yaml
 
 from src import models
 from src.configs import Config
+from src.services.camera import CameraController
+from src.services.gps import GpsController
+from src.services.motor import MotorController
+from src.utils import get_yaml
 
 CONFIG_PATH = './config.yaml'  # Путь к файлу с настройками
 
@@ -19,7 +20,7 @@ lock: asyncio.Lock = asyncio.Lock()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global motor, gps
+    global motor, gps, camera
 
     configs = get_yaml(CONFIG_PATH)
     motor = MotorController(**configs['motor'])

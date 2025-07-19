@@ -1,6 +1,8 @@
 import time
+
 import serial
 from pydantic import BaseModel, ConfigDict
+
 from src.utils import get_yaml
 
 

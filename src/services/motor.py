@@ -4,8 +4,8 @@ from typing import Any
 from OPi import GPIO
 from pydantic import BaseModel
 
-from src.services import pi3b
 from src.models import FoodAmount
+from src.services import pi3b
 
 
 class MotorController(BaseModel):

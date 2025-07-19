@@ -1,9 +1,10 @@
 import subprocess
 import time
+
+from pydantic import BaseModel, ConfigDict
+
 from src.configs import Config
 from src.utils import get_yaml
-from pydantic import BaseModel, ConfigDict
-import os
 
 
 class CameraController(BaseModel):
@@ -27,6 +28,7 @@ class CameraController(BaseModel):
             'ffmpeg',
             '-f', 'v4l2',
             '-i', '/dev/video3',
+            '-vf', 'format=yuv420p',
             '-s', self.resolution,
             '-r', str(self.max_fps),
             '-c:v', 'libx264',
