@@ -6,4 +6,4 @@ class Config(BaseSettings):
     rtsp_host: str
     rtsp_port: str
     rtsp_suffix: str
-    model_config = SettingsConfigDict(env_file="../.env")
+    model_config = SettingsConfigDict(env_file="./.env")

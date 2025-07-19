@@ -4,7 +4,7 @@ from typing import Any
 from OPi import GPIO
 from pydantic import BaseModel
 
-from src import pi3b
+from src.services import pi3b
 from src.models import FoodAmount
 
 
@@ -33,7 +33,8 @@ class MotorController(BaseModel):
         GPIO.setup(self.step_pin, GPIO.OUT)
         GPIO.setup(self.direction_pin, GPIO.OUT)
         GPIO.setup(self.enable_pin, GPIO.OUT)
-        GPIO.output(self.direction_pin, GPIO.HIGH if self.direction else GPIO.LOW)
+        GPIO.output(self.direction_pin,
+                    GPIO.HIGH if self.direction else GPIO.LOW)
         self.is_enabled = True
 
     def close(self) -> None:

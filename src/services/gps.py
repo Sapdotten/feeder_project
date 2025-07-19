@@ -1,13 +1,18 @@
 import time
 import serial
-from pydantic import BaseModel
-from utils import get_yaml
+from pydantic import BaseModel, ConfigDict
+from src.utils import get_yaml
 
 
 class GpsController(BaseModel):
     uart_port: str
     baud_rate: int
     timeout: int = 1
+
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        extra="allow"
+    )
 
     def setup(self):
         self.serialPort = serial.Serial(
